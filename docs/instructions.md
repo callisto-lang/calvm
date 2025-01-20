@@ -30,6 +30,12 @@ Operations:
 - ! = Bitwise not
 - ^ = Bitwise xor
 
+Functions:
+- `ecall(N)` - Calls the external function of the ID `N`
+
+Registers:
+- `IP` - Instruction Pointer
+
 Syntax:
 - `;` = comment
 
