@@ -14,6 +14,9 @@ All instructions are a 8-bit opcode. Opcodes have this structure:
 	- Word = 32 bits
 - The first 64 instructions are reserved for simple CPU instructions that are always
   present. The last 64 instructions are reserved for extension instructions.
+- Parameters for instructions are always 32-bit, with the following exceptions:
+	- For `WRB`, the first parameter is 8 bits
+	- For `WRH`, the first parameter is 16 bits
 
 # Instructions
 The `Does` section is pseudocode. Parameters are letters in alphabetical order. For example,
@@ -34,6 +37,7 @@ Functions:
 - `ecall(N)` - Calls the external function of the ID `N`
 - `pushr(N)` - Pushes N to the return stack
 - `popr()` - Pops from the return stack and returns the popped value
+- `popd()` - Pops from the data stack and returns the popped value
 
 Registers:
 - `IP` - Instruction Pointer
@@ -77,3 +81,7 @@ Syntax:
 | CALL    | `I0011111`  | `pushr(IP), IP = A`                                        |
 | ECALL   | `I0100000`  | `ecall(A)`                                                 |
 | RET     | `I0100000`  | `IP = popr()`                                              |
+| SHL     | `I0100001`  | `#A << B`                                                  |
+| SHR     | `I0100010`  | `#A >> B`                                                  |
+| PUSH    | `I0100011`  | `#A ; immediate mode is ignored and always active`         |
+| POP     | `I0100100`  | `popd()`                                                    |
