@@ -4,7 +4,7 @@ All instructions are a 8-bit opcode. Opcodes have this structure:
 | Bit/s | Description                                                                |
 | ----- | -------------------------------------------------------------------------- |
 | 0-7   | Instruction                                                                |
-| 1     | Immediate mode                                                             |
+| 8     | Immediate mode                                                             |
 
 ## Important information
 - All integers are little endian
