@@ -32,6 +32,8 @@ Operations:
 
 Functions:
 - `ecall(N)` - Calls the external function of the ID `N`
+- `pushr(N)` - Pushes N to the return stack
+- `popr()` - Pops from the return stack and returns the popped value
 
 Registers:
 - `IP` - Instruction Pointer
@@ -74,3 +76,4 @@ Syntax:
 | RDW     | `I0011110`  | `#mem[A] ; word`                                           |
 | CALL    | `I0011111`  | `pushr(IP), IP = A`                                        |
 | ECALL   | `I0100000`  | `ecall(A)`                                                 |
+| RET     | `I0100000`  | `IP = popr()`                                              |
