@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "safe.h"
 #include "calvm.h"
 #include "common.h"
 
@@ -11,7 +12,7 @@ int main(int argc, char** argv) {
 		return 0;
 	}
 
-	FILE* file = fopen(argv[1]);
+	FILE* file = fopen(argv[1], "rb");
 
 	if (file == NULL) {
 		perror(argv[1]);
@@ -27,7 +28,7 @@ int main(int argc, char** argv) {
 	fclose(file);
 
 	CalVM vm;
-	CalVM_Init(&vm, program, size, 16777216);
+	CalVM_Init(&vm, program, 16777216);
 
 	while (!vm.halted) {
 		CalVM_RunInst(&vm);

@@ -10,7 +10,7 @@ else
 	FLAGS += -g -Og
 endif
 
-compile: $(OBJ) $(SRC) $(DEPS)
+compile: ./bin $(OBJ) $(SRC) $(DEPS)
 	$(CC) $(OBJ) $(LIBS) -o $(OUT) $(FLAGS)
 
 ./bin:

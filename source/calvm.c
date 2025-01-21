@@ -4,19 +4,29 @@
 #include "calvm.h"
 #include "insts.h"
 
-void CalVM_Init(CalVM* vm, uint8_t* program, uint32_t romSize, uint32_t ramSize) {
-	vm->rom     = program;
-	vm->romSize = romSize;
+static uint32_t Read32(uint8_t* ptr) {
+	return
+		((uint32_t) ptr[0]) |
+		(((uint32_t) ptr[1]) << 8) |
+		(((uint32_t) ptr[2]) << 16) |
+		(((uint32_t) ptr[3]) << 24);
+}
+
+void CalVM_Init(CalVM* vm, uint8_t* program, uint32_t ramSize) {
+	vm->rom     = program + 8;
+	vm->romSize = Read32(program);
 	vm->ram     = SafeMalloc(ramSize);
 	vm->ramSize = ramSize;
 	vm->ip      = 0;
 	vm->halted  = false;
-	vm->dsp     = 0;
-	vm->rsp     = ramSize;
+	vm->dsp     = ramSize - 512 * 4;
+	vm->rsp     = vm->dsp;
+
+	// read data
+	memcpy(vm->ram, program + Read32(program) + 8, Read32(program + 4));
 }
 
 void CalVM_Free(CalVM* vm) {
-	free(vm->rom);
 	free(vm->ram);
 }
 
@@ -26,11 +36,7 @@ uint16_t CalVM_Read16(CalVM* vm, uint32_t addr) {
 }
 
 uint32_t CalVM_Read32(CalVM* vm, uint32_t addr) {
-	return
-		((uint32_t) vm->ram[addr]) |
-		(((uint32_t) vm->ram[addr + 1]) << 8) |
-		(((uint32_t) vm->ram[addr + 2]) << 16) |
-		(((uint32_t) vm->ram[addr + 3]) << 24);
+	return Read32(&vm->ram[addr]);
 }
 
 void CalVM_Write16(CalVM* vm, uint32_t addr, uint16_t value) {
@@ -177,16 +183,16 @@ void CalVM_RunInst(CalVM* vm) {
 		case INST_RDB:   OP_UNARY(a = vm->ram[a]); break;
 		case INST_RDH:   OP_UNARY(a = CalVM_Read16(vm, a)); break;
 		case INST_RDW:   OP_UNARY(a = CalVM_Read32(vm, a)); break;
-		case INST_CALL:  VOID_UNARY(CalVM_PushReturn(vm, vm->ip); ip = a); break;
+		case INST_CALL:  VOID_UNARY(CalVM_PushReturn(vm, vm->ip); vm->ip = a); break;
 		case INST_ECALL: assert(0); // TODO
-		case INST_RET:   ip = CalVM_PopReturn(vm); break;
+		case INST_RET:   vm->ip = CalVM_PopReturn(vm); break;
 		case INST_SHL:   OP_BIN(a <<= b); break;
 		case INST_SHR:   OP_BIN(a >>= b); break;
 		case INST_POP:   CalVM_Pop(vm); break;
-		case INST_HALT:  if (imm) exit(0) else exit((int) CalVM_Pop(vm)); break;
+		case INST_HALT:  if (imm) exit(0); else exit((int) CalVM_Pop(vm)); break;
 		case INST_RDSP:  CalVM_Push(vm, vm->dsp); break;
 		case INST_WDSP:  vm->dsp = CalVM_Pop(vm); break;
-		case INST_RRSP:  CalVM(vm, vm->rsp); break;
+		case INST_RRSP:  CalVM_Push(vm, vm->rsp); break;
 		case INST_WRSP:  vm->rsp = CalVM_Pop(vm); break;
 		default: {
 			fprintf(stderr, "Unknown instruction %.2X\n", inst);

@@ -14,7 +14,7 @@ typedef struct {
 	bool     halted;
 } CalVM;
 
-void CalVM_Init(CalVM* vm, uint8_t* program, uint32_t romSize, uint32_t ramSize);
+void CalVM_Init(CalVM* vm, uint8_t* program, uint32_t ramSize);
 void CalVM_Free(CalVM* vm);
 
 // memory
