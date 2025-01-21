@@ -53,6 +53,9 @@ Functions:
 
 Registers:
 - `IP` - Instruction Pointer
+- `DSP` - Data Stack Pointer, this is the main stack used by all instructions
+- `RSP` - Return Stack Pointer, this is where return addresses go and it's where you
+  would usually allocate local variables
 
 Syntax:
 - `;` = comment
@@ -62,10 +65,11 @@ Syntax:
 | NOP     | `I0000000`  | Nothing                                                    |
 | JMP     | `I0000001`  | `IP = A`                                                   |
 | JNZ     | `I0000010`  | `if (B != 0) IP = A`                                       |
-| JZ      | `I0000011`  | `if (B == 0  IP = A`                                       |
+| JZ      | `I0000011`  | `if (B == 0) IP = A`                                       |
 | ADD     | `I0000100`  | `#A + B`                                                   |
 | SUB     | `I0000101`  | `#A - B`                                                   |
 | MUL     | `I0000110`  | `#A * B`                                                   |
+| IECALL  | `I0001111`  | `ecall(mem[A]) ; reads a word`                             |
 | DIV     | `I0001000`  | `#A / B`                                                   |
 | IDIV    | `I0001001`  | `#A s/ B`                                                  |
 | MOD     | `I0001010`  | `#A % B`                                                   |
@@ -96,3 +100,7 @@ Syntax:
 | SHR     | `I0100011`  | `#A >> B`                                                  |
 | POP     | `I0100100`  | `popd()`                                                   |
 | HALT    | `I0100101`  | `if (I) exit(A) else exit(0)`                              |
+| RDSP    | `I0100110`  | `#dsp`                                                     |
+| WDSP    | `I0100111`  | `dsp = A`                                                  |
+| RRSP    | `I0101000`  | `#rsp`                                                     |
+| WRSP    | `I0101001`  | `rsp = A`                                                  |
