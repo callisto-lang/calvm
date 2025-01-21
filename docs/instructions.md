@@ -69,7 +69,7 @@ Syntax:
 | ADD     | `I0000100`  | `#A + B`                                                   |
 | SUB     | `I0000101`  | `#A - B`                                                   |
 | MUL     | `I0000110`  | `#A * B`                                                   |
-| IECALL  | `I0001111`  | `ecall(mem[A]) ; reads a word`                             |
+| IECALL  | `I0000111`  | `ecall(mem[A]) ; reads a word`                             |
 | DIV     | `I0001000`  | `#A / B`                                                   |
 | IDIV    | `I0001001`  | `#A s/ B`                                                  |
 | MOD     | `I0001010`  | `#A % B`                                                   |
