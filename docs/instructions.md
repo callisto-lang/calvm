@@ -3,7 +3,7 @@ All instructions are a 8-bit opcode. Opcodes have this structure:
 
 | Bit/s | Description                                                                |
 | ----- | -------------------------------------------------------------------------- |
-| 0-7   | Instruction                                                                |
+| 0-6   | Instruction                                                                |
 | 7     | Immediate mode                                                             |
 
 ## Important information
@@ -14,15 +14,26 @@ All instructions are a 8-bit opcode. Opcodes have this structure:
 	- Word = 32 bits
 - The first 64 instructions are reserved for simple CPU instructions that are always
   present. The last 64 instructions are reserved for extension instructions.
-- Parameters for instructions are always 32-bit, with the following exceptions:
-	- For `WRB`, the first parameter is 8 bits
-	- For `WRH`, the first parameter is 16 bits
+- Parameters for instructions are always 32-bit, but they are truncated in these instances:
+	- For `WRB`, the first parameter is truncated to 8 bits
+	- For `WRH`, the first parameter is truncated to 16 bits
+- Integer division is truncated division
+- The program is seperate from RAM, and it is in ROM. The program is loaded at address
+  0.
+
+# Immediate mode
+Immediate mode is a mode for instructions where the final parameter is taken from after
+the instruction in ROM instead of from the stack. The behaviour of it is that it
+pushes the immediate parameter to the stack before running the instruction. Instructions
+with no parameter will still do this in immediate mode. This means that instructions
+like `NOP` are used for pushing literals to the stack.
 
 # Instructions
 The `Does` section is pseudocode. Parameters are letters in alphabetical order. For example,
 `ADD` does this: `A + B`. If an instruction returns multiple values, the operations are
 delimited with a comma. The parameter type bit is `I` in the opcodes. Returned values
 begin with `#`.
+
 
 Operations:
 - s* = Signed multiply
@@ -38,6 +49,7 @@ Functions:
 - `pushr(N)` - Pushes N to the return stack
 - `popr()` - Pops from the return stack and returns the popped value
 - `popd()` - Pops from the data stack and returns the popped value
+- `exit(N)` - Exits with exit code N
 
 Registers:
 - `IP` - Instruction Pointer
@@ -80,8 +92,8 @@ Syntax:
 | RDW     | `I0011110`  | `#mem[A] ; word`                                           |
 | CALL    | `I0011111`  | `pushr(IP), IP = A`                                        |
 | ECALL   | `I0100000`  | `ecall(A)`                                                 |
-| RET     | `I0100000`  | `IP = popr()`                                              |
-| SHL     | `I0100001`  | `#A << B`                                                  |
-| SHR     | `I0100010`  | `#A >> B`                                                  |
-| PUSH    | `I0100011`  | `#A ; immediate mode is ignored and always active`         |
-| POP     | `I0100100`  | `popd()`                                                    |
+| RET     | `I0100001`  | `IP = popr()`                                              |
+| SHL     | `I0100010`  | `#A << B`                                                  |
+| SHR     | `I0100011`  | `#A >> B`                                                  |
+| POP     | `I0100100`  | `popd()`                                                   |
+| HALT    | `I0100101`  | `if (I) exit(A) else exit(0)`                              |
