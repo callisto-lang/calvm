@@ -127,8 +127,8 @@ void CalVM_RunInst(CalVM* vm) {
 	switch (inst) {
 		case INST_NOP:    break;
 		case INST_JMP:    VOID_UNARY(vm->ip = a); break;
-		case INST_JNZ:    VOID_BIN(if (b != 0) vm->ip = a); break;
-		case INST_JZ:     VOID_BIN(if (b == 0) vm->ip = a); break;
+		case INST_JNZ:    VOID_BIN(if (a != 0) vm->ip = b); break;
+		case INST_JZ:     VOID_BIN(if (a == 0) vm->ip = b); break;
 		case INST_ADD:    OP_BIN(a += b); break;
 		case INST_SUB:    OP_BIN(a -= b); break;
 		case INST_MUL:    OP_BIN(a *= b); break;
@@ -170,10 +170,10 @@ void CalVM_RunInst(CalVM* vm) {
 		case INST_OR:    OP_BIN(a |= b); break;
 		case INST_XOR:   OP_BIN(a ^= b); break;
 		case INST_NOT:   OP_UNARY(a = ~a); break;
-		case INST_WRB:   VOID_BIN(vm->ram[b] = a); break;
+		case INST_WRB:   VOID_BIN(CalVM_Write8(vm, b, a)); break;
 		case INST_WRH:   VOID_BIN(CalVM_Write16(vm, b, a)); break;
 		case INST_WRW:   VOID_BIN(CalVM_Write32(vm, b, a)); break;
-		case INST_RDB:   OP_UNARY(a = vm->ram[a]); break;
+		case INST_RDB:   OP_UNARY(a = CalVM_Read8(vm, a)); break;
 		case INST_RDH:   OP_UNARY(a = CalVM_Read16(vm, a)); break;
 		case INST_RDW:   OP_UNARY(a = CalVM_Read32(vm, a)); break;
 		case INST_CALL:  VOID_UNARY(CalVM_PushReturn(vm, vm->ip); vm->ip = a); break;
