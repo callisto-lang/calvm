@@ -34,5 +34,7 @@ int main(int argc, char** argv) {
 		CalVM_RunInst(&vm);
 	}
 
+	CalVM_DumpState(&vm);
 	CalVM_Free(&vm);
+	return vm.exitCode;
 }

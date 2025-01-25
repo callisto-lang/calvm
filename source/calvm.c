@@ -3,14 +3,7 @@
 #include "safe.h"
 #include "calvm.h"
 #include "insts.h"
-
-static uint32_t Read32(uint8_t* ptr) {
-	return
-		((uint32_t) ptr[0]) |
-		(((uint32_t) ptr[1]) << 8) |
-		(((uint32_t) ptr[2]) << 16) |
-		(((uint32_t) ptr[3]) << 24);
-}
+#include "efuncs.h"
 
 void CalVM_Init(CalVM* vm, uint8_t* program, uint32_t ramSize) {
 	vm->rom     = program + 8;
@@ -24,63 +17,53 @@ void CalVM_Init(CalVM* vm, uint8_t* program, uint32_t ramSize) {
 
 	// read data
 	memcpy(vm->ram, program + Read32(program) + 8, Read32(program + 4));
+
+	// set efuncs
+	memset(vm->efuncs, 0, sizeof(vm->efuncs));
+	InitEFuncs(vm->efuncs);
 }
 
 void CalVM_Free(CalVM* vm) {
 	free(vm->ram);
 }
 
-// memory
-uint16_t CalVM_Read16(CalVM* vm, uint32_t addr) {
-	return ((uint16_t) vm->ram[addr]) | (((uint16_t) vm->ram[addr + 1]) << 8);
+void CalVM_DumpState(CalVM* vm) {
+	int topStack = CalVM_Read32(vm, vm->dsp - 4);
+
+	printf("IP:      %.8X\n", vm->ip);
+	printf("DSP:     %.8X\n", vm->dsp);
+	printf("RSP:     %.8X\n", vm->rsp);
+	printf("Top DSP: %.8X (%d)\n", topStack, topStack);
 }
 
-uint32_t CalVM_Read32(CalVM* vm, uint32_t addr) {
-	return Read32(&vm->ram[addr]);
+void CalVM_DumpRom(CalVM* vm) {
+	puts("begin rom dump");
+	for (uint32_t i = 0; i < vm->romSize; ++ i) {
+		printf("%.2X\n", vm->rom[i]);
+	}
+	puts("end rom dump");
 }
 
-void CalVM_Write16(CalVM* vm, uint32_t addr, uint16_t value) {
-	vm->ram[addr]     = (uint8_t) (value & 0xFF);
-	vm->ram[addr + 1] = (uint8_t) ((value & 0xFF00) >> 8);
-}
+char* CalVM_GetString(CalVM* vm, uint32_t addr, size_t length) {
+	char* ret   = SafeMalloc(length + 1);
+	ret[length] = 0;
 
-void CalVM_Write32(CalVM* vm, uint32_t addr, uint32_t value) {
-	vm->ram[addr]     = (uint8_t) (value & 0xFF);
-	vm->ram[addr + 1] = (uint8_t) ((value & 0xFF00) >> 8);
-	vm->ram[addr + 2] = (uint8_t) ((value & 0xFF0000) >> 16);
-	vm->ram[addr + 3] = (uint8_t) ((value & 0xFF000000) >> 24);
-}
+	for (uint32_t i = 0; i < length; ++ i) {
+		ret[i] = CalVM_Read8(vm, addr + i);
+	}
 
-void CalVM_Push(CalVM* vm, uint32_t value) {
-	CalVM_Write32(vm, vm->dsp, value);
-	vm->dsp += 4;
-}
-
-uint32_t CalVM_Pop(CalVM* vm) {
-	vm->dsp -= 4;
-	return CalVM_Read32(vm, vm->dsp);
-}
-
-void CalVM_PushReturn(CalVM* vm, uint32_t value) {
-	vm->rsp -= 4;
-	CalVM_Write32(vm, vm->rsp, value);
-}
-
-uint32_t CalVM_PopReturn(CalVM* vm) {
-	uint32_t ret = CalVM_Read32(vm, vm->rsp);
-	vm->rsp += 4;
 	return ret;
 }
 
 static uint8_t NextByte(CalVM* vm) {
-	uint8_t ret = vm->ram[vm->ip];
+	uint8_t ret = vm->rom[vm->ip];
 	++ vm->ip;
 
 	return ret;
 }
 
 static uint32_t NextWord(CalVM* vm) {
-	uint32_t ret;
+	uint32_t ret = 0;
 	ret |= (uint32_t) NextByte(vm);
 	ret |= ((uint32_t) NextByte(vm)) << 8;
 	ret |= ((uint32_t) NextByte(vm)) << 16;
@@ -120,6 +103,16 @@ static uint32_t NextWord(CalVM* vm) {
 	CalVM_Push(vm, a); \
 } while(0)
 
+static void RunEFunc(CalVM* vm, uint32_t which) {
+	if ((which >= 1024) || (vm->efuncs[which] == NULL)) {
+		fprintf(stderr, "\n\nERROR! Function %d does not exist\n", which);
+		vm->halted   = true;
+		vm->exitCode = 1;
+	}
+
+	vm->efuncs[which](vm);
+}
+
 void CalVM_RunInst(CalVM* vm) {
 	if (vm->halted) return;
 
@@ -139,7 +132,7 @@ void CalVM_RunInst(CalVM* vm) {
 		case INST_ADD:    OP_BIN(a += b); break;
 		case INST_SUB:    OP_BIN(a -= b); break;
 		case INST_MUL:    OP_BIN(a *= b); break;
-		case INST_IECALL: assert(0); // TODO
+		case INST_IECALL: RunEFunc(vm, CalVM_Read32(vm, CalVM_Pop(vm))); break;
 		case INST_DIV:    OP_BIN(a /= b); break;
 		case INST_IDIV:   OP_SIGNED_BIN(a /= b); break;
 		case INST_MOD:    OP_BIN(a %= b); break;
@@ -184,12 +177,16 @@ void CalVM_RunInst(CalVM* vm) {
 		case INST_RDH:   OP_UNARY(a = CalVM_Read16(vm, a)); break;
 		case INST_RDW:   OP_UNARY(a = CalVM_Read32(vm, a)); break;
 		case INST_CALL:  VOID_UNARY(CalVM_PushReturn(vm, vm->ip); vm->ip = a); break;
-		case INST_ECALL: assert(0); // TODO
+		case INST_ECALL: RunEFunc(vm, CalVM_Pop(vm)); break;
 		case INST_RET:   vm->ip = CalVM_PopReturn(vm); break;
 		case INST_SHL:   OP_BIN(a <<= b); break;
 		case INST_SHR:   OP_BIN(a >>= b); break;
 		case INST_POP:   CalVM_Pop(vm); break;
-		case INST_HALT:  if (imm) exit(0); else exit((int) CalVM_Pop(vm)); break;
+		case INST_HALT:  {
+			vm->halted   = true;
+			vm->exitCode = imm? CalVM_Pop(vm) : 0;
+			break;
+		}
 		case INST_RDSP:  CalVM_Push(vm, vm->dsp); break;
 		case INST_WDSP:  vm->dsp = CalVM_Pop(vm); break;
 		case INST_RRSP:  CalVM_Push(vm, vm->rsp); break;
