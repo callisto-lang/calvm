@@ -2,7 +2,7 @@ SRC   = $(wildcard source/*.c) $(wildcard source/**/*.c)
 DEPS  = $(wildcard source/*.h) $(wildcard source/**/*.h)
 OBJ   = $(addsuffix .o,$(subst source/,bin/,$(basename ${SRC})))
 OUT   = calvm
-FLAGS = -std=c99 -Wall -Wextra -pedantic -Istb -Wuninitialized
+FLAGS = -std=c99 -Wall -Wextra -pedantic -Wuninitialized
 
 ifeq ($(BUILD), release)
 	FLAGS += -O3 -s

@@ -1,0 +1,29 @@
+requires Heap
+requires IO
+requires File
+
+include "cores/select.cal"
+include "std/io.cal"
+include "std/args.cal"
+include "util.cal"
+include "lexer.cal"
+
+let Array appUsage
+"Usage: calvmasm <SOURCE.asm> <OUT.cvm>" &appUsage a<
+
+if get_args_length 3 = not then
+	&appUsage print_str new_line
+	0 exit
+end
+'A' print_dec new_line
+
+let Array in
+let Array out
+1 &in get_arg
+2 &out get_arg
+
+let Vector source
+&in &source read_file
+
+let Lexer lexer
+&source &lexer lexer_lex

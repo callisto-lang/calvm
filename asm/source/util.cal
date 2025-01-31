@@ -1,0 +1,22 @@
+include "std/vector.cal"
+
+func read_file ptr Array path ptr Vector ret begin
+	let File file
+	path FILE_READ open_file &file file<
+
+	if &file @ -2 = then
+		"Failed to open file\n" print_str
+		1 exit
+	end
+
+	let cell fileSize
+	&file 0 SEEK_END file_seek
+	&file file_peek -> fileSize
+	&file 0 SEEK_SET file_seek
+
+	u8.sizeOf ret init_vec
+	fileSize ret vec_set_size
+
+	&file ret.elements fileSize file@
+	&file close_file
+end

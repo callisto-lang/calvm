@@ -1,0 +1,5 @@
+struct Error
+	Array file
+	cell  line
+	cell  col
+end

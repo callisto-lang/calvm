@@ -1,0 +1,61 @@
+include "std/vector.cal"
+include "error.cal"
+
+enum TokenType
+	Null
+	Instruction
+	Label
+	Keyword
+	Integer
+	Push
+	Address
+end
+
+struct Token
+	TokenType type
+	Vector    contents
+	Error     err
+end
+
+func free_token ptr Token token begin
+	&token.contents free_vec
+end
+
+struct Lexer
+	Vector tokens
+	Vector reading
+	cell   line
+	cell   col
+	addr   code # TODO: i think `ptr` in structures is broken :fearful:
+	cell   i
+end
+
+implement Lexer init
+	let ptr Lexer lexer
+	-> lexer
+
+	lexer print_dec new_line
+	Token.sizeOf &lexer.tokens init_vec
+	lexer print_dec new_line
+	&free_token -> lexer.tokens.freeFunc
+	u8.sizeOf &lexer.reading init_vec
+	0 -> lexer.line
+	0 -> lexer.col
+end
+
+implement Lexer deinit
+	let ptr Lexer lexer
+	-> lexer
+
+	&lexer.tokens free_vec
+	&lexer.reading free_vec
+end
+
+func lexer_lex ptr Array code ptr Lexer lexer begin
+	code -> lexer.code
+
+	0 -> lexer.i
+	while lexer.i code.length < do
+		lexer.i code a@ print_ch
+	end
+end
